@@ -143,37 +143,66 @@ const genName=makeNameFactory(masses);
 /* ---------- arrays ---------- */
 const orbitLines=[], nameLabels=[], planets=[];
 
-/* ---------- planet factory ---------- */
-function makePlanet(idx,mass,size,offset){
-  const rOrbit=R0+ALPHA*mass;
-  const omega=BASE_SPEED/rOrbit;
-  const inc=rand()*Math.PI/4, Omega=rand()*Math.PI*2, theta0=offset;
 
-  const mesh=new THREE.Mesh(
-    new THREE.SphereGeometry(size,20,20),
-    new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(rand(),0.8,0.55)})
+function makePlanet(idx, mass, size, offset) {
+  console.log(planetNames[idx], idx);
+
+  let inc = rand() * Math.PI / 4;
+  const Omega = rand() * Math.PI * 2;
+  const theta0 = offset;
+  const rOrbit = R0 + ALPHA * mass;
+  const omega = BASE_SPEED / rOrbit;
+
+  // Apply special orbital inclinations for certain planets
+  if (planetNames[idx] === 'Noca') {
+    console.warn(`Applying high inclination to planet "${planetNames[idx]}"`);
+    inc = Math.PI * 44 / 180;  // 34 degrees
+  }
+
+  if (planetNames[idx] === 'Giosu') {
+    console.warn(`Applying high inclination to planet "${planetNames[idx]}"`);
+    inc = Math.PI * -24 / 180;  // 34 degrees
+  }
+
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(size, 20, 20),
+    new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(rand(), 0.8, 0.55) })
   );
   scene.add(mesh);
 
-  const pts=[]; for(let k=0;k<=ORBIT_SEGMENTS;k++){
-    const t=k*2*Math.PI/ORBIT_SEGMENTS;
-    pts.push(new THREE.Vector3(...Object.values(xyz(rOrbit,t,inc,Omega))));
+  const pts = [];
+  for (let k = 0; k <= ORBIT_SEGMENTS; k++) {
+    const t = k * 2 * Math.PI / ORBIT_SEGMENTS;
+    pts.push(new THREE.Vector3(...Object.values(xyz(rOrbit, t, inc, Omega))));
   }
-  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
-    new THREE.LineBasicMaterial({color:0x555555,transparent:false,opacity:ORBIT_OPACITY}));
-  orbitLines.push(line); scene.add(line);
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color: 0x555555, transparent: false, opacity: ORBIT_OPACITY })
+  );
+  orbitLines.push(line);
+  scene.add(line);
 
-  const div=document.createElement('div');
-  div.className='label'; div.textContent=planetNames[idx];
-  const label=new CSS2DObject(div);
-  label.position.set(0,0,size*1.1+1);
-  mesh.add(label); nameLabels.push(label);
+  const div = document.createElement('div');
+  div.className = 'label';
+  div.textContent = planetNames[idx];
+  const label = new CSS2DObject(div);
+  label.position.set(0, 0, size * 1.1 + 1);
+  mesh.add(label);
+  nameLabels.push(label);
 
-  return {size,r:rOrbit,omega,inc,Omega,theta0,theta:theta0,mesh};
+  return { size, r: rOrbit, omega, inc, Omega, theta0, theta: theta0, mesh };
 }
+/* end exception logic for NOCA */
+
+
 const planetNames=masses.map(m=>genName(m));
 const sizes=explicitSizes;
-masses.forEach((m,i)=>planets.push(makePlanet(i,m,sizes[i],i*2*Math.PI/masses.length)));
+//masses.forEach((m,i)=>planets.push(makePlanet(i,m,sizes[i],i*2*Math.PI/masses.length)));
+masses.forEach((m, i) => {
+  const planet = makePlanet(i, m, sizes[i], i * 2 * Math.PI / masses.length);
+  planets.push(planet);
+  console.log(`Planet: ${planetNames[i]}, Mass: ${m.toFixed(3)}, Distance from sun: ${planet.r.toFixed(3)}, Radius: ${sizes[i].toFixed(3)}`);
+});
 
 /* ---------- GUI ---------- */
 const params={speed:0,seekTime:0,showDisc:true,showOrbits:true,showNames:true};
